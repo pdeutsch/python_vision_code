@@ -1,10 +1,11 @@
 import cv2
 import numpy as np
 import math
+import argparse
 
 cntr = 0
 
-def make_hex_shape():
+def make_half_hex_shape():
     pts = []
     for ang in [0, 60, 120, 180]:
         ang_r = math.radians(ang)
@@ -28,6 +29,8 @@ def proc_img(shape, mask, img):
     hexes = []
 
     cntr += 1
+
+    # debug code to show some contours for frame 100
     if cntr == 100:
         print(f"Got contours, count: {len(contours)}")
         print(contours)
@@ -63,7 +66,7 @@ def show_frame(img, mask, cntr):
     return False
 
 def process_video(fname):
-    shape = make_hex_shape()
+    shape = make_half_hex_shape()
     cap = cv2.VideoCapture(fname)
     #hsv max: 89, 255, 255
     #hsv min: 78, 231, 240
@@ -80,8 +83,9 @@ def process_video(fname):
     while ret and not quit_flag:
         cntr += 1
         img = cv2.resize(img, None, fx=0.5, fy=0.5)
-        hsvimg = cv2.GaussianBlur(img, (5,5), 0)
-        hsvimg = cv2.cvtColor(hsvimg, cv2.COLOR_BGR2HSV)
+        # blur to get try to remove missing parts
+        img = cv2.GaussianBlur(img, (5,5), 0)
+        hsvimg = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
         mask = cv2.inRange(hsvimg, lower_green, upper_green)
 
         # mask out the bottom of the image 
@@ -96,7 +100,12 @@ def process_video(fname):
     cap.release()
 
 def main():
-    process_video('Left_Frame.avi')
+    parser = argparse.ArgumentParser()
+    parser.add_argument('fname', help='Video filename', nargs='+')
+    args = parser.parse_args()
+    for video_fname in args.fname:
+        process_video(video_fname)
+
     cv2.destroyAllWindows()
 
 if __name__ == '__main__':
